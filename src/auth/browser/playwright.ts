@@ -13,8 +13,9 @@ import { sessionFromCookies } from "../harvest.js";
  * `OAuth.AccessToken` bearer, the `UUID` (customer-uuid), and the tesco.com
  * cookies. Every data-plane call afterwards is pure HTTP (see GraphQLTransport).
  *
- * Approach ported from the proven Python reference client: real Chrome channel
- * + persistent profile + light stealth shim defeats Akamai's automation tells.
+ * Uses the system Chrome channel and a persistent profile so the session presents
+ * as an ordinary browser. The stealth shim sets `navigator.webdriver` to match a
+ * normal (non-automated) Chrome before any page scripts run.
  *
  * `playwright` is an OPTIONAL peer dependency — imported lazily so the core
  * library stays dependency-free for the (anonymous) read path and for
@@ -32,7 +33,7 @@ const REFRESH_URL =
 
 const DEFAULT_PROFILE_DIR = join(homedir(), ".basketeer", "chrome-profile");
 
-// Hides the obvious automation tells before Akamai's scripts run.
+// Runs before any page scripts; sets navigator properties to match a normal (non-automated) Chrome.
 const STEALTH_INIT = `() => {
   Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
   Object.defineProperty(navigator, 'languages', { get: () => ['en-GB', 'en'] });
