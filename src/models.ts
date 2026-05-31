@@ -151,3 +151,50 @@ export interface Session {
   /** epoch ms; parsed from the JWT `exp` when available, else undefined. */
   accessTokenExpiry?: number;
 }
+
+export type NutritionBasis = "per_100g" | "per_100ml" | "per_serving" | "unknown";
+
+export interface Macros {
+  energyKcal: number | null;
+  energyKj: number | null;
+  protein: number | null;
+  fat: number | null;
+  saturates: number | null;
+  carbs: number | null;
+  sugars: number | null;
+  fibre: number | null;
+  salt: number | null;
+}
+
+export interface Micronutrient {
+  name: string;
+  amount: number | null;
+  unit: string | null;
+  nrvPercent: number | null;
+}
+
+export interface Nutrition {
+  basis: NutritionBasis;
+  servingSize: string | null;
+  macros: Macros;
+  micros: Micronutrient[];
+  perServing: Macros | null;
+  raw: unknown[];
+}
+
+export interface Range { min?: number; max?: number; }
+
+/** Macro fields that can be filtered/sorted on. Excludes energyKj (use energyKcal). */
+export type MacroFilterKey =
+  | "energyKcal" | "protein" | "fat" | "saturates"
+  | "carbs" | "sugars" | "fibre" | "salt";
+
+export type NutritionFilter =
+  Partial<Record<MacroFilterKey, Range>> & {
+    micro?: { name: string; min?: number; max?: number }[];
+  };
+
+export interface NutritionSort {
+  by: MacroFilterKey | (string & {}); // a MacroFilterKey or a micronutrient name
+  dir?: "asc" | "desc";
+}
