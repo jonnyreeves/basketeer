@@ -23,13 +23,13 @@
  */
 
 import { createHash } from "node:crypto";
-import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { BrowserAuthBackend } from "./auth/browser/playwright.js";
 import type { NutritionFilter } from "./index.js";
 import { Basketeer, BasketeerError, FileTokenStore } from "./index.js";
+import { isMainModule } from "./is-main.js";
 
 /** Wrap a value as MCP JSON text content. */
 function json(value: unknown) {
@@ -60,7 +60,7 @@ export function confirmToken(parts: string): string {
  * Pure: no filesystem/auth/transport side effects — safe to call from a test.
  */
 export function buildServer(client: Basketeer): McpServer {
-  const server = new McpServer({ name: "basketeer", version: "0.1.0" });
+  const server = new McpServer({ name: "basketeer", version: "0.1.1" });
 
   // --- reads (anonymous OK) -------------------------------------------------
 
@@ -258,7 +258,7 @@ export function buildServer(client: Basketeer): McpServer {
 // Only build the client (which reads ~/.basketeer/session.json) and attach the
 // stdio transport when run as a binary, so the module can be imported (e.g. by a
 // smoke test) without any filesystem/auth side effects or starting the server.
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   const store = new FileTokenStore();
   const client = new Basketeer({
     session: await store.load(),

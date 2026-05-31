@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * `basketeer` — a thin CLI over the basketeer SDK.
  *
@@ -9,11 +10,11 @@
  * hands back a payment URL — a human completes payment in a browser.
  */
 
-import { fileURLToPath } from "node:url";
 import { Command, InvalidArgumentError } from "commander";
 import { BrowserAuthBackend } from "./auth/browser/playwright.js";
 import type { NutritionFilter } from "./index.js";
 import { Basketeer, BasketeerError, FileTokenStore } from "./index.js";
+import { isMainModule } from "./is-main.js";
 
 /** Pretty-print any JSON-serialisable value to stdout. */
 function emit(value: unknown): void {
@@ -248,7 +249,7 @@ program
 // --- entrypoint -------------------------------------------------------------
 
 // Only parse argv when run as a binary, so the module is importable (tests).
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   program.parseAsync().catch((err: unknown) => {
     const name = err instanceof BasketeerError ? err.name : "Error";
     const message = err instanceof Error ? err.message : String(err);

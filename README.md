@@ -23,7 +23,7 @@ Run your weekly shop from code, the terminal, or an AI agent. Everything but sig
 <br>
 
 [![CI](https://github.com/tobyandrews1985/basketeer/actions/workflows/ci.yml/badge.svg)](https://github.com/tobyandrews1985/basketeer/actions/workflows/ci.yml)
-[![tests](https://img.shields.io/badge/tests-71%20passing-brightgreen.svg)](tests/)
+[![tests](https://img.shields.io/badge/tests-75%20passing-brightgreen.svg)](tests/)
 [![license: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 [![node >=18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
 
@@ -39,7 +39,7 @@ Tesco has no public API, and the usual approach (scraping the DOM) shatters on t
 - **Agent-ready.** A stdio MCP server lets Claude or any MCP client run the shop. Read-only and destructive tools are annotated, and checkout never pays.
 - **Typed and lean.** One fully-typed client you import; the CLI and MCP server are built on it. The data path imports no third-party packages (the three runtime deps — commander, the MCP SDK, and zod — are pulled only by the CLI and MCP server). It is pure `fetch` with no Node-only APIs, so it runs on Node and Node-compatible runtimes.
 - **Safe.** `checkout()` stops at the payment URL. A human finishes 3-D Secure in a browser, by design.
-- **Tested.** 71 tests across the data plane and its parsers.
+- **Tested.** 75 tests across the data plane and its parsers.
 
 ## Nutrition, the part nothing else has
 
@@ -260,7 +260,7 @@ Personal-account interoperability automation: your account, your data. The clien
 
 ```bash
 npm install
-npm test          # 71 tests: vitest unit + regression + smoke
+npm test          # 75 tests: vitest unit + regression + smoke
 npm run build     # clean build to dist/
 npm run example:lookup
 ```
