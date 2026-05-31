@@ -3,7 +3,8 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { parseNutrition } from "../src/nutrition.js";
+import { parseNutrition, filterByNutrition } from "../src/nutrition.js";
+import type { Product } from "../src/models.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixture = (n: string) => JSON.parse(readFileSync(join(here, "fixtures/nutrition", n), "utf8"));
@@ -39,5 +40,41 @@ describe("parseNutrition", () => {
   it("preserves the raw rows", () => {
     const rows = fixture("oatly-barista.json");
     expect(parseNutrition(rows)!.raw).toEqual(rows);
+  });
+});
+
+function product(sku: string, basis: "per_100g" | null, macros: Partial<Record<string, number>>): Product {
+  const nutrition = basis === null ? null : {
+    basis, servingSize: null, perServing: null, micros: [], raw: [],
+    macros: {
+      energyKcal: null, energyKj: null, protein: null, fat: null, saturates: null,
+      carbs: null, sugars: null, fibre: null, salt: null, ...macros,
+    },
+  };
+  return { sku, tpnb: sku, title: sku, brand: null, price: null, onOffer: null,
+    promotions: [], packSize: null, nutrition, macros: nutrition?.macros ?? null, raw: {} } as unknown as Product;
+}
+
+describe("filterByNutrition", () => {
+  const items = [
+    product("a", "per_100g", { protein: 25, sugars: 1 }),
+    product("b", "per_100g", { protein: 10, sugars: 9 }),
+    product("c", "per_100g", { protein: 30, sugars: 0 }),
+    product("d", null, {}), // no nutrition
+  ];
+
+  it("drops products with no nutrition when filtering", () => {
+    const out = filterByNutrition(items, { where: { protein: { min: 0 } } });
+    expect(out.map(p => p.sku)).not.toContain("d");
+  });
+
+  it("applies min/max ranges", () => {
+    const out = filterByNutrition(items, { where: { protein: { min: 20 }, sugars: { max: 2 } } });
+    expect(out.map(p => p.sku).sort()).toEqual(["a", "c"]);
+  });
+
+  it("sorts descending, missing last", () => {
+    const out = filterByNutrition(items, { sort: { by: "protein", dir: "desc" } });
+    expect(out.map(p => p.sku)).toEqual(["c", "a", "b"]); // d dropped (sort references nutrition)
   });
 });
