@@ -34,12 +34,15 @@ import {
   parseOrder,
   isoDate,
 } from "./parsers.js";
+import { filterByNutrition } from "./nutrition.js";
 import { LineRejectedError, NotFoundError, BasketeerError } from "./errors.js";
 import type { AuthBackend, Credentials } from "./auth/types.js";
 import type { TokenStore } from "./store/types.js";
 import type {
   Basket,
   BookedSlot,
+  NutritionFilter,
+  NutritionSort,
   Order,
   Product,
   SearchPage,
@@ -170,6 +173,30 @@ export class Basketeer {
       mfeName: MFE.search,
     });
     return this.page(data.search?.results, (e) => (e as Raw).node, opts);
+  }
+
+  /**
+   * Keyword search, then hydrate the top `hydrate` results' nutrition (each a throttled
+   * product fetch) and filter/rank locally. Returns the products plus how many were
+   * hydrated/skipped — the cost is bounded by `hydrate` (default 20) and reported, not hidden.
+   */
+  async searchByNutrition(
+    query: string,
+    opts: { where?: NutritionFilter; sort?: NutritionSort; hydrate?: number; limit?: number } = {},
+  ): Promise<{ results: Product[]; hydrated: number; skipped: number }> {
+    const cap = opts.hydrate ?? 20;
+    const page = await this.search(query);
+    const head = page.results.slice(0, cap);
+    const skipped = Math.max(0, page.results.length - head.length);
+
+    const hydrated: Product[] = [];
+    for (const r of head) {
+      hydrated.push(await this.getProduct(r.sku)); // serial — relies on the 1 req/s transport throttle
+    }
+
+    let results = filterByNutrition(hydrated, { where: opts.where, sort: opts.sort });
+    if (opts.limit != null) results = results.slice(0, opts.limit);
+    return { results, hydrated: hydrated.length, skipped };
   }
 
   /**

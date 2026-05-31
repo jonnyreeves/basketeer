@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Basketeer } from "../src/client.js";
 import { ApiKeyError, RateLimitedError, LineRejectedError, AuthExpiredError } from "../src/errors.js";
 import type { AuthBackend } from "../src/auth/types.js";
-import { stubFetch, SESSION } from "./helpers.js";
+import { stubFetch, SESSION, makeNutritionClient } from "./helpers.js";
 
 const SEARCH_BODY = [
   {
@@ -195,5 +195,28 @@ describe("401 refresh-and-retry", () => {
     const { impl } = stubFetch([{ body: unauthorized }]);
     const t = new Basketeer({ session: SESSION, throttleMs: 0, fetchImpl: impl });
     await expect(t.basket.get()).rejects.toBeInstanceOf(AuthExpiredError);
+  });
+});
+
+describe("searchByNutrition", () => {
+  it("hydrates results, filters by nutrition, and reports counts", async () => {
+    const client = makeNutritionClient();
+
+    const out = await client.searchByNutrition("protein", {
+      where: { protein: { min: 20 } },
+      sort: { by: "protein", dir: "desc" },
+      hydrate: 3,
+    });
+
+    expect(out.hydrated).toBe(3);
+    expect(out.results.map((p) => p.sku)).toEqual(["c", "a"]); // b filtered out (protein=10), sorted desc
+    expect(out.skipped).toBe(0);
+  });
+
+  it("respects the hydrate cap and reports skipped", async () => {
+    const client = makeNutritionClient(); // search returns 3 results
+    const out = await client.searchByNutrition("protein", { hydrate: 2 });
+    expect(out.hydrated).toBe(2);
+    expect(out.skipped).toBe(1);
   });
 });
