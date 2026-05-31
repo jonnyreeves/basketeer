@@ -11,7 +11,7 @@ One typed core, with a CLI and an MCP server on top, so your code, your terminal
 <img src="docs/media/demo.gif" alt="basketeer searching Tesco from the CLI — live results, no browser" width="760">
 
 [![npm](https://img.shields.io/npm/v/basketeer.svg)](https://www.npmjs.com/package/basketeer)
-[![tests](https://img.shields.io/badge/tests-33%20passing-brightgreen.svg)](tests/)
+[![tests](https://img.shields.io/badge/tests-43%20passing-brightgreen.svg)](tests/)
 [![runtime deps](https://img.shields.io/badge/runtime%20deps-3-blue.svg)](package.json)
 [![license: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 [![node >=18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
@@ -30,7 +30,7 @@ Tesco has no public API. The tools that exist scrape the DOM and shatter on the 
 - **Typed.** A clean, fully-typed client you import. The CLI and MCP server are built on it.
 - **Portable.** Runs anywhere `fetch` runs: Node, Bun, Deno, serverless, Electron. Just 3 runtime deps; the browser is an optional peer.
 - **Safe.** `checkout()` stops at the payment URL. A human finishes 3-D Secure in a browser, by design.
-- **Tested.** 33 tests across the data plane and its parsers.
+- **Tested.** 43 tests across the data plane and its parsers.
 
 ## Quick start
 
@@ -102,8 +102,29 @@ The full grocery lifecycle, typed end to end:
 - **Slots** — delivery and collection: `list` / `book` / `release`
 - **Orders** — `list`, `amend`, `cancel`, `lastFulfilled` (reorder)
 - **Checkout** — `checkout()` returns the payment URL; it never pays
+- **Nutrition** — typed macros + micros on every product; filter/rank a search by nutrition
 
 → Full reference (signatures, return types, the error catalogue, and where the browser runs): **[docs/api.md](docs/api.md)**
+
+## Nutrition
+
+Every product carries Tesco's on-pack nutrition, normalized to typed macros and micros:
+
+```ts
+const p = await client.getProduct(sku);
+p.macros;              // { energyKcal, protein, fat, saturates, carbs, sugars, fibre, salt }
+p.nutrition?.micros;   // [{ name: "Vitamin B12", amount: 0.38, unit: "µg", nrvPercent: 15 }, ...]
+
+// Filter/rank a keyword search by nutrition:
+const { results, hydrated } = await client.searchByNutrition("greek yogurt", {
+  where: { protein: { min: 8 }, sugars: { max: 6 } },
+  sort: { by: "protein", dir: "desc" },
+});
+```
+
+> Nutrition-filtered search runs a keyword search, then fetches each candidate's nutrition
+> (a throttled product call each, capped by `hydrate`, default 20). It filters *within* a
+> search — it does not scan the whole catalogue.
 
 ## How it works
 
@@ -152,7 +173,7 @@ for (const it of last?.items ?? []) await client.basket.set(it.productId!, it.qu
 
 ## MCP server (for AI agents)
 
-A stdio MCP server ships as the `basketeer-mcp` bin, exposing tools (`basketeer_search`, `basketeer_basket_set`, `basketeer_slots_list`, `basketeer_orders_list`, `basketeer_checkout`, …) so Claude Desktop or any MCP client can shop. `basketeer_checkout` returns the payment URL for the human. There is no "pay" tool.
+A stdio MCP server ships as the `basketeer-mcp` bin, exposing tools (`basketeer_search`, `basketeer_basket_set`, `basketeer_slots_list`, `basketeer_orders_list`, `basketeer_checkout`, `basketeer_nutrition`, `basketeer_search_by_nutrition`, …) so Claude Desktop or any MCP client can shop. `basketeer_checkout` returns the payment URL for the human. There is no "pay" tool.
 
 ```jsonc
 // claude_desktop_config.json — run `basketeer login` once first so it has a session.
@@ -172,7 +193,9 @@ The `basketeer` bin prints JSON to stdout, coded errors to stderr. Install globa
 ```bash
 basketeer login                      # one-time browser sign-in
 basketeer search "oat milk" --limit 5
+basketeer search "greek yogurt" --min-protein 8 --sort protein --hydrate 10
 basketeer product 254656543
+basketeer nutrition 292990463        # normalized macros + micros for a product
 basketeer favourites
 basketeer basket add 258114107 1     # increment;  basket set <sku> <qty> for exact
 basketeer slots                      # --collection for click-and-collect
@@ -192,7 +215,7 @@ Personal-account interoperability automation: your account, your data. The clien
 
 ```bash
 npm install
-npm test          # 33 tests: vitest unit + regression + smoke
+npm test          # 43 tests: vitest unit + regression + smoke
 npm run build     # clean build to dist/
 npm run example:lookup
 ```
