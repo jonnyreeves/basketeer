@@ -1,0 +1,16 @@
+# build output (published via prepublishOnly, not committed)
+dist/
+*.tsbuildinfo
+
+# deps
+node_modules/
+
+# os / editor
+.DS_Store
+.claude/
+
+# local secrets & harvested sessions — never commit
+.env
+.env.*
+*.session
+.tesco-connect/

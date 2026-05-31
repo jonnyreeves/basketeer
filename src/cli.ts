@@ -1,0 +1,195 @@
+#!/usr/bin/env node
+/**
+ * `tesco` — a thin CLI over the tesco-connect SDK.
+ *
+ * Reads work anonymously; writes (basket / slots / orders / checkout) resume a
+ * persisted session via {@link FileTokenStore} and, for `login`, mint one with
+ * {@link BrowserAuthBackend}. Results print as JSON to stdout; coded errors go
+ * to stderr with a non-zero exit. Per the SDK's ethics ceiling, `checkout` only
+ * hands back a payment URL — a human completes payment in a browser.
+ */
+
+import { fileURLToPath } from "node:url";
+import { Command } from "commander";
+import { TescoClient, FileTokenStore, TescoError } from "./index.js";
+import { BrowserAuthBackend } from "./auth/browser/playwright.js";
+
+/** Pretty-print any JSON-serialisable value to stdout. */
+function emit(value: unknown): void {
+  process.stdout.write(JSON.stringify(value, null, 2) + "\n");
+}
+
+const store = new FileTokenStore();
+
+/** Resume a persisted session for authenticated commands (refreshing if able). */
+function authedClient(): Promise<TescoClient> {
+  return TescoClient.resume({ store, authBackend: new BrowserAuthBackend() });
+}
+
+/** Anonymous client for read-only commands (no session required). */
+function readClient(): TescoClient {
+  return new TescoClient();
+}
+
+const program = new Command();
+program
+  .name("tesco")
+  .description("Typed CLI for Tesco grocery automation (tesco-connect).")
+  .showHelpAfterError();
+
+// --- auth -------------------------------------------------------------------
+
+program
+  .command("login")
+  .description("Open a real Chrome to sign in, then persist the harvested session.")
+  .action(async () => {
+    const client = new TescoClient({ store, authBackend: new BrowserAuthBackend() });
+    const session = await client.login();
+    emit({ ok: true, customerUuid: session.customerUuid, expiresAt: session.accessTokenExpiry ?? null });
+  });
+
+// --- reads (anonymous) ------------------------------------------------------
+
+program
+  .command("search")
+  .description("Search the catalogue.")
+  .argument("<query>", "search terms")
+  .option("--limit <n>", "max results", "10")
+  .action(async (query: string, opts: { limit: string }) => {
+    emit(await readClient().search(query, { limit: Number(opts.limit) }));
+  });
+
+program
+  .command("product")
+  .description("Look up a single product by SKU (tpnc).")
+  .argument("<sku>", "product SKU / tpnc")
+  .action(async (sku: string) => {
+    emit(await readClient().getProduct(sku));
+  });
+
+program
+  .command("favourites")
+  .description("List the customer's favourites (requires a session).")
+  .option("--limit <n>", "max results", "50")
+  .action(async (opts: { limit: string }) => {
+    const client = await authedClient();
+    emit(await client.favourites({ limit: Number(opts.limit) }));
+  });
+
+// --- basket -----------------------------------------------------------------
+
+const basket = program.command("basket").description("Inspect and edit the basket.");
+
+basket
+  .command("get")
+  .description("Show the current basket.")
+  .action(async () => {
+    const client = await authedClient();
+    emit(await client.basket.get());
+  });
+
+basket
+  .command("add")
+  .description("Add <qty> (default 1) of a product to the basket (increments the line).")
+  .argument("<sku>", "product SKU / tpnc")
+  .argument("[qty]", "quantity to add", "1")
+  .action(async (sku: string, qty: string) => {
+    const client = await authedClient();
+    emit(await client.basket.add(sku, Number(qty)));
+  });
+
+basket
+  .command("set")
+  .description("Set a basket line to an exact quantity (0 removes it).")
+  .argument("<sku>", "product SKU / tpnc")
+  .argument("<qty>", "exact quantity")
+  .action(async (sku: string, qty: string) => {
+    const client = await authedClient();
+    emit(await client.basket.set(sku, Number(qty)));
+  });
+
+basket
+  .command("remove")
+  .description("Remove a line from the basket.")
+  .argument("<sku>", "product SKU / tpnc")
+  .action(async (sku: string) => {
+    const client = await authedClient();
+    emit(await client.basket.remove(sku));
+  });
+
+// --- slots ------------------------------------------------------------------
+
+program
+  .command("slots")
+  .description("List delivery slots (or collection slots with --collection).")
+  .option("--collection", "list click-and-collect slots instead of delivery")
+  .action(async (opts: { collection?: boolean }) => {
+    const client = await authedClient();
+    emit(opts.collection ? await client.slots.listCollection() : await client.slots.list());
+  });
+
+// --- orders -----------------------------------------------------------------
+
+const orders = program.command("orders").description("Inspect and manage orders.");
+
+orders
+  .command("list")
+  .description("List upcoming orders.")
+  .action(async () => {
+    const client = await authedClient();
+    emit(await client.orders.list());
+  });
+
+orders
+  .command("cancel")
+  .description("Cancel an order by order number.")
+  .argument("<orderNo>", "order number")
+  .action(async (orderNo: string) => {
+    const client = await authedClient();
+    await client.orders.cancel(orderNo);
+    emit({ ok: true, cancelled: orderNo });
+  });
+
+orders
+  .command("reorder")
+  .description("Re-add the last delivered order's items to the basket.")
+  .action(async () => {
+    const client = await authedClient();
+    const last = await client.orders.lastFulfilled();
+    if (!last) {
+      emit({ ok: false, reason: "no previous fulfilled order" });
+      return;
+    }
+    const items = last.items
+      .filter((it) => it.productId)
+      .map((it) => ({ id: it.productId!, newValue: it.quantity, newUnitChoice: it.unit ?? "pcs" }));
+    const basketResult = await client.basket.update(items);
+    emit({ ok: true, reorderedFrom: last.orderNo, lines: items.length, basket: basketResult });
+  });
+
+// --- checkout ---------------------------------------------------------------
+
+program
+  .command("checkout")
+  .description("Prepare checkout and print the payment URL (a human completes payment).")
+  .action(async () => {
+    const client = await authedClient();
+    const { basket: cart, url } = await client.checkout();
+    emit({
+      basket: cart,
+      paymentUrl: url,
+      note: "Payment is browser-bound (3-D Secure). Open paymentUrl and complete payment yourself — the CLI never pays.",
+    });
+  });
+
+// --- entrypoint -------------------------------------------------------------
+
+// Only parse argv when run as a binary, so the module is importable (tests).
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  program.parseAsync().catch((err: unknown) => {
+    const name = err instanceof TescoError ? err.name : "Error";
+    const message = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`${name}: ${message}\n`);
+    process.exit(1);
+  });
+}
