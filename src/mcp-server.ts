@@ -64,6 +64,7 @@ server.tool(
   "basketeer_search",
   "Search the Tesco grocery catalogue. Returns matching products with SKU, title, price, and any offers.",
   { query: z.string().describe("Search terms, e.g. 'semi skimmed milk'."), limit: z.number().int().positive().optional() },
+  { readOnlyHint: true },
   ({ query, limit }) => run(() => client.search(query, { limit })),
 );
 
@@ -71,6 +72,7 @@ server.tool(
   "basketeer_product",
   "Fetch one product by SKU (tpnc), including price, pack size, promotions, and nutrition.",
   { sku: z.string().describe("The product SKU (tpnc), e.g. from a search result.") },
+  { readOnlyHint: true },
   ({ sku }) => run(() => client.getProduct(sku)),
 );
 
@@ -78,6 +80,7 @@ server.tool(
   "basketeer_favourites",
   "List the signed-in customer's favourites ('my usuals'). Requires a saved session.",
   { limit: z.number().int().positive().optional() },
+  { readOnlyHint: true },
   ({ limit }) => run(() => client.favourites({ limit })),
 );
 
@@ -85,6 +88,7 @@ server.tool(
   "basketeer_nutrition",
   "Normalized nutrition (typed macros + micros) for a product by SKU.",
   { sku: z.string().describe("The product SKU (tpnc).") },
+  { readOnlyHint: true },
   ({ sku }) => run(() => client.getProduct(sku).then((p) => p.nutrition)),
 );
 
@@ -100,6 +104,7 @@ server.tool(
     hydrate: z.number().int().positive().optional().describe("Max candidates to fetch nutrition for (default 20)."),
     limit: z.number().int().positive().optional().describe("Max results to return after filtering."),
   },
+  { readOnlyHint: true },
   ({ query, minProtein, maxSugar, sortBy, hydrate, limit }) =>
     run(() => {
       const where: NutritionFilter = {};
@@ -116,6 +121,7 @@ server.tool(
   "basketeer_basket_get",
   "Get the current basket: line items, quantities, and guide price.",
   {},
+  { readOnlyHint: true },
   () => run(() => client.basket.get()),
 );
 
@@ -126,6 +132,7 @@ server.tool(
     sku: z.string().describe("The product SKU (tpnc) to set."),
     quantity: z.number().int().nonnegative().describe("Exact quantity to set; 0 removes."),
   },
+  { readOnlyHint: false, destructiveHint: true },
   ({ sku, quantity }) => run(() => client.basket.set(sku, quantity)),
 );
 
@@ -133,6 +140,7 @@ server.tool(
   "basketeer_basket_remove",
   "Remove a SKU from the basket entirely.",
   { sku: z.string().describe("The product SKU (tpnc) to remove.") },
+  { readOnlyHint: false, destructiveHint: true },
   ({ sku }) => run(() => client.basket.remove(sku)),
 );
 
@@ -145,6 +153,7 @@ server.tool(
     start: z.string().optional().describe("Window start, YYYY-MM-DD."),
     end: z.string().optional().describe("Window end, YYYY-MM-DD."),
   },
+  { readOnlyHint: true },
   ({ start, end }) => run(() => client.slots.list({ start, end })),
 );
 
@@ -154,6 +163,7 @@ server.tool(
   "basketeer_orders_list",
   "List upcoming (pending) orders with their items, slot, and amend window.",
   {},
+  { readOnlyHint: true },
   () => run(() => client.orders.list()),
 );
 
@@ -161,6 +171,7 @@ server.tool(
   "basketeer_orders_cancel",
   "Cancel an upcoming order outright (only before its amend/cancel cutoff).",
   { orderNo: z.string().describe("The order number to cancel.") },
+  { readOnlyHint: false, destructiveHint: true },
   ({ orderNo }) => run(() => client.orders.cancel(orderNo).then(() => ({ cancelled: orderNo }))),
 );
 
@@ -168,6 +179,7 @@ server.tool(
   "basketeer_reorder_last",
   "Get the last delivered order and its items, for 'reorder my usual shop'. Returns null if none.",
   {},
+  { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   () => run(() => client.orders.lastFulfilled()),
 );
 
@@ -178,6 +190,7 @@ server.tool(
   "Prepare checkout: returns the current basket and the URL where a HUMAN completes payment in a browser. " +
     "This server never places or pays for an order — Tesco's 3-D Secure payment step is browser-bound by design.",
   {},
+  { readOnlyHint: false, destructiveHint: true },
   () =>
     run(async () => {
       const { basket, url } = await client.checkout();
