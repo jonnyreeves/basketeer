@@ -11,7 +11,7 @@ One typed core, with a CLI and an MCP server on top, so your code, your terminal
 <img src="docs/media/demo.gif" alt="basketeer searching Tesco from the CLI — live results, no browser" width="760">
 
 [![npm](https://img.shields.io/npm/v/basketeer.svg)](https://www.npmjs.com/package/basketeer)
-[![tests](https://img.shields.io/badge/tests-43%20passing-brightgreen.svg)](tests/)
+[![tests](https://img.shields.io/badge/tests-65%20passing-brightgreen.svg)](tests/)
 [![CI](https://github.com/tobyandrews1985/basketeer/actions/workflows/ci.yml/badge.svg)](https://github.com/tobyandrews1985/basketeer/actions/workflows/ci.yml)
 [![runtime deps](https://img.shields.io/badge/runtime%20deps-3-blue.svg)](package.json)
 [![license: MIT](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
@@ -29,9 +29,9 @@ Tesco has no public API. The tools that exist scrape the DOM and shatter on the 
 - **Robust.** Pure-HTTP GraphQL, not DOM scraping. A cosmetic site redesign won't break it.
 - **Complete.** Book, amend, cancel, and reorder a delivered shop. The full order lifecycle, not just "add to basket."
 - **Typed.** A clean, fully-typed client you import. The CLI and MCP server are built on it.
-- **Portable.** Runs on Node, Bun, Deno, and Node-compatible serverless/edge runtimes. Just 3 runtime deps; the browser is an optional peer.
+- **Portable.** Runs on Node, Bun, and Deno. Just 3 runtime deps; the browser is an optional peer.
 - **Safe.** `checkout()` stops at the payment URL. A human finishes 3-D Secure in a browser, by design.
-- **Tested.** 43 tests across the data plane and its parsers.
+- **Tested.** 65 tests across the data plane and its parsers.
 
 ## Quick start
 
@@ -216,7 +216,7 @@ Personal-account interoperability automation: your account, your data. The clien
 
 ```bash
 npm install
-npm test          # 43 tests: vitest unit + regression + smoke
+npm test          # 65 tests: vitest unit + regression + smoke
 npm run build     # clean build to dist/
 npm run example:lookup
 ```
