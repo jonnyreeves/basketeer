@@ -123,3 +123,43 @@ describe("basket write returns a full-fidelity basket", () => {
     expect(basket.amendExpiry).toBe("2026-06-05T22:00:00Z");
   });
 });
+
+describe("raw HTTP 401 triggers refresh", () => {
+  it("refreshes once on a raw HTTP 401 and retries", async () => {
+    const PRODUCT_NODE = {
+      tpnc: "123",
+      tpnb: "123",
+      title: "Test Product",
+      brandName: "TestBrand",
+      price: { actual: 1.0, unitPrice: 1.0, unitOfMeasure: "kg" },
+      promotions: [],
+      details: { packSize: null, nutrition: [], ingredients: [] },
+    };
+
+    let calls = 0;
+    let refreshed = 0;
+    const impl = (async () => {
+      calls++;
+      if (calls === 1) {
+        return new Response("Unauthorized", { status: 401 }); // raw, non-JSON
+      }
+      return new Response(JSON.stringify([{ data: { product: PRODUCT_NODE } }]), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }) as unknown as typeof fetch;
+
+    const backend: AuthBackend = {
+      login: async () => SESSION,
+      refresh: async () => {
+        refreshed++;
+        return SESSION;
+      },
+    };
+    const t = new Basketeer({ session: SESSION, authBackend: backend, throttleMs: 0, fetchImpl: impl });
+
+    await t.getProduct("123");
+    expect(refreshed).toBe(1);
+    expect(calls).toBe(2);
+  });
+});

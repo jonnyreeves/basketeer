@@ -37,9 +37,12 @@ export interface TransportOptions {
 
 function isUnauthorized(errors: readonly unknown[]): boolean {
   for (const e of errors) {
-    const err = e as { extensions?: { http?: { status?: number } }; message?: string };
+    const err = e as { extensions?: { http?: { status?: number } }; message?: string; status?: unknown };
+    // Synthetic 401 envelope injected by post() for raw HTTP 401 responses.
+    if (err.status === 401) return true;
+    if (typeof err.message === "string" && /unauthor|401/i.test(err.message)) return true;
+    // GraphQL extension checks (existing).
     if (err.extensions?.http?.status === 401) return true;
-    if ((err.message ?? "").toLowerCase() === "unauthorized") return true;
   }
   return false;
 }
@@ -129,6 +132,10 @@ export class GraphQLTransport {
     // Read the body once. Non-2xx responses are often plain text, not JSON.
     const text = await res.text();
 
+    if (res.status === 401) {
+      // Raw HTTP 401 (often non-JSON). Surface as unauthorized so execute() refreshes + retries.
+      return { errors: [{ message: "HTTP 401 Unauthorized", status: 401 }] };
+    }
     if (res.status === 403) {
       if (/invalid client/i.test(text)) {
         throw new ApiKeyError(
