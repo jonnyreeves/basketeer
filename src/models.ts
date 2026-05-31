@@ -177,10 +177,8 @@ export interface Micronutrient {
 
 export interface Nutrition {
   basis: NutritionBasis;
-  servingSize: string | null;
   macros: Macros;
   micros: Micronutrient[];
-  perServing: Macros | null;
   raw: unknown[];
 }
 

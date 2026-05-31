@@ -10,7 +10,7 @@ The full surface. For the pitch, quick start, and how it works, see the [README]
 | Search | `search(q, { limit?, page? })` → `SearchPage` | anon | `{ results, page, pageSize, hasMore }`. |
 | Browse | `browseCategory(facet, opts)` → `SearchPage` | anon | Build `facet` with `categoryFacet("Fresh Food")`. |
 | Favourites | `favourites(opts)` → `SearchPage` | authed | "My usuals". |
-| Nutrition search | `searchByNutrition(q, opts)` → `{ results, hydrated, skipped }` | anon | Keyword search then bounded hydration + filter. See [Nutrition](#nutrition). |
+| Nutrition search | `searchByNutrition(q, opts)` → `{ results, hydrated, failed, hasMore }` | anon | Keyword search then bounded hydration + filter. See [Nutrition](#nutrition). |
 | Basket | `basket.get / add / set / remove / update` → `Basket` | authed | `add` increments; `set` is exact (0 removes). |
 | Delivery slots | `slots.list({ start?, end?, type? })` → `Slot[]` | authed | Default window today..+6 days. |
 | Collection slots | `slots.listCollection(opts)` → `Slot[]` | authed | Click-and-collect. |
@@ -27,7 +27,7 @@ The full surface. For the pitch, quick start, and how it works, see the [README]
 
 | Type | Fields | Notes |
 | --- | --- | --- |
-| `Nutrition` | `basis`, `servingSize`, `macros`, `micros`, `perServing`, `raw` | `null` if Tesco returned no rows or they were unparseable. |
+| `Nutrition` | `basis`, `macros`, `micros`, `raw` | `null` if Tesco returned no rows or they were unparseable. |
 | `Macros` | `energyKcal`, `energyKj`, `protein`, `fat`, `saturates`, `carbs`, `sugars`, `fibre`, `salt` | All `number \| null` (g or kcal/kJ). |
 | `Micronutrient` | `name`, `amount`, `unit`, `nrvPercent` | One entry per on-pack micronutrient row. |
 | `NutritionBasis` | `"per_100g" \| "per_100ml" \| "per_serving" \| "unknown"` | Detected from the table header. |
@@ -42,10 +42,10 @@ client.searchByNutrition(query: string, opts?: {
   sort?:    NutritionSort;     // { by: MacroFilterKey | microName, dir?: "asc" | "desc" }
   hydrate?: number;            // max candidates to fetch nutrition for (default 20)
   limit?:   number;            // trim final results list
-}) => Promise<{ results: Product[]; hydrated: number; skipped: number }>
+}) => Promise<{ results: Product[]; hydrated: number; failed: number; hasMore: boolean }>
 ```
 
-Runs a keyword search, fetches nutrition for the top `hydrate` results (one throttled product call each), then applies `filterByNutrition` locally. `hydrated` is the number of products fetched; `skipped` is how many search hits were beyond the cap.
+Runs a keyword search, fetches nutrition for the top `hydrate` results (one throttled product call each), then applies `filterByNutrition` locally. `hydrated` is the number of products successfully fetched; `failed` is how many candidates whose detail fetch errored (e.g. a discontinued/regional SKU that 404s) and were skipped — a single failure never rejects the call; `hasMore` is true when the catalogue had more keyword matches than were hydrated.
 
 > This filters *within* a search result — it does not scan the whole catalogue. Cost is bounded by `hydrate` (default 20).
 
@@ -71,7 +71,7 @@ basketeer search "<query>" --min-protein <g> --max-sugar <g> --sort <field> --hy
 | Tool | Input | Notes |
 | --- | --- | --- |
 | `basketeer_nutrition` | `{ sku: string }` | Returns the `Nutrition` object for a product. |
-| `basketeer_search_by_nutrition` | `{ query, minProtein?, maxSugar?, sortBy?, hydrate?, limit? }` | Nutrition-filtered search. Returns `{ results, hydrated, skipped }`. |
+| `basketeer_search_by_nutrition` | `{ query, minProtein?, maxSugar?, sortBy?, hydrate?, limit? }` | Nutrition-filtered search. Returns `{ results, hydrated, failed, hasMore }`. |
 
 ## Auth: where the browser runs
 
