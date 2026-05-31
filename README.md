@@ -28,7 +28,7 @@ Tesco has no public API. The tools that exist scrape the DOM and shatter on the 
 - **Robust.** Pure-HTTP GraphQL, not DOM scraping. A cosmetic site redesign won't break it.
 - **Complete.** Book, amend, cancel, and reorder a delivered shop. The full order lifecycle, not just "add to basket."
 - **Typed.** A clean, fully-typed client you import. The CLI and MCP server are built on it.
-- **Portable.** Runs anywhere `fetch` runs: Node, Bun, Deno, serverless, Electron. Just 3 runtime deps; the browser is an optional peer.
+- **Portable.** Runs on Node, Bun, Deno, and Node-compatible serverless/edge runtimes. Just 3 runtime deps; the browser is an optional peer.
 - **Safe.** `checkout()` stops at the payment URL. A human finishes 3-D Secure in a browser, by design.
 - **Tested.** 43 tests across the data plane and its parsers.
 
