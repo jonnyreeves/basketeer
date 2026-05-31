@@ -30,7 +30,12 @@ export type {
   OrderAddress,
   Order,
   Session,
+  Nutrition, Macros, Micronutrient, NutritionBasis,
+  Range, NutritionFilter, NutritionSort, MacroFilterKey,
 } from "./models.js";
+
+// Nutrition
+export { parseNutrition, filterByNutrition } from "./nutrition.js";
 
 // Errors
 export {
