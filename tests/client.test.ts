@@ -21,6 +21,12 @@ const SEARCH_BODY = [
               tpnb: "54550994",
               title: "Tesco British Semi Skimmed Milk 2.272L, 4 Pints",
               brandName: "TESCO",
+              productType: "SingleProduct",
+              averageWeight: 0,
+              minWeight: 0,
+              maxWeight: 0,
+              increment: 0,
+              bulkBuyLimit: 25,
               sellers: {
                 results: [
                   {
@@ -53,6 +59,12 @@ const PRODUCT_PACKAGED = [
         tpnb: "111",
         title: "Coca-Cola 1.75L",
         brandName: "Coca-Cola",
+        productType: "SingleProduct",
+        averageWeight: 0,
+        minWeight: 0,
+        maxWeight: 0,
+        increment: 0,
+        bulkBuyLimit: 99,
         price: { actual: 2.49, unitPrice: 1.42, unitOfMeasure: "litre" },
         promotions: [],
         details: { packSize: [{ value: "1750", units: "ML" }], nutrition: [], ingredients: [] },
@@ -69,6 +81,12 @@ const PRODUCT_LOOSE = [
         tpnb: "222",
         title: "Tesco Bananas Loose",
         brandName: "TESCO",
+        productType: "CatchWeightProducts",
+        averageWeight: 1.65,
+        minWeight: 1,
+        maxWeight: 2.3,
+        increment: 325,
+        bulkBuyLimit: 25,
         price: { actual: 0.17, unitPrice: 1.1, unitOfMeasure: "kg" },
         promotions: [],
         details: { packSize: null, nutrition: [], ingredients: [] },
@@ -92,6 +110,20 @@ describe("request assembly", () => {
     expect(Array.isArray(body)).toBe(true);
     expect(body[0].operationName).toBe("Search");
     expect(body[0].extensions.mfeName).toBe("mfe-plp");
+  });
+
+  it("selects quantity rule fields on product and search reads", async () => {
+    const fields = "productType averageWeight minWeight maxWeight increment bulkBuyLimit";
+    const { impl: productImpl, calls: productCalls } = stubFetch([{ body: PRODUCT_PACKAGED }]);
+    const productClient = new Basketeer({ throttleMs: 0, fetchImpl: productImpl });
+    await productClient.getProduct("282822189");
+    expect(productCalls[0]!.body[0].query).toContain(fields);
+
+    const { impl: searchImpl, calls: searchCalls } = stubFetch([{ body: SEARCH_BODY }]);
+    const searchClient = new Basketeer({ throttleMs: 0, fetchImpl: searchImpl });
+    await searchClient.search("milk");
+    expect(searchCalls[0]!.body[0].query).toContain("... on ProductInterface");
+    expect(searchCalls[0]!.body[0].query).toContain(fields);
   });
 
   it("omits auth headers when anonymous", async () => {
@@ -122,6 +154,14 @@ describe("parsing", () => {
     const r = results[0];
     expect(r!.sku).toBe("254656543");
     expect(r!.price.actual).toBe(1.65);
+    expect(r!.quantityRules).toEqual({
+      productType: "SingleProduct",
+      averageWeight: 0,
+      minWeight: 0,
+      maxWeight: 0,
+      increment: 0,
+      bulkBuyLimit: 25,
+    });
     expect(r!.onOffer).toBe(true);
     expect(r!.promotions[0]!.priceBeforeDiscount).toBeNull();
     expect(r!.promotions[0]!.priceAfterDiscount).toBe(1.65);
@@ -132,6 +172,14 @@ describe("parsing", () => {
     const t = new Basketeer({ throttleMs: 0, fetchImpl: impl });
     const p = await t.getProduct("282822189");
     expect(p.packSize).toEqual({ value: 1750, units: "ML" });
+    expect(p.quantityRules).toEqual({
+      productType: "SingleProduct",
+      averageWeight: 0,
+      minWeight: 0,
+      maxWeight: 0,
+      increment: 0,
+      bulkBuyLimit: 99,
+    });
   });
 
   it("handles null packSize (loose produce) without throwing", async () => {
@@ -140,6 +188,14 @@ describe("parsing", () => {
     const p = await t.getProduct("275280804");
     expect(p.packSize).toBeNull();
     expect(p.price.actual).toBe(0.17);
+    expect(p.quantityRules).toEqual({
+      productType: "CatchWeightProducts",
+      averageWeight: 1.65,
+      minWeight: 1,
+      maxWeight: 2.3,
+      increment: 325,
+      bulkBuyLimit: 25,
+    });
   });
 });
 

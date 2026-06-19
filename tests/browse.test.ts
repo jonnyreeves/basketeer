@@ -14,6 +14,12 @@ const FAVOURITES_BODY = [
             tpnb: "11",
             title: "Tesco Semi Skimmed Milk",
             brandName: "TESCO",
+            productType: "SingleProduct",
+            averageWeight: 0,
+            minWeight: 0,
+            maxWeight: 0,
+            increment: 0,
+            bulkBuyLimit: 25,
             sellers: {
               results: [
                 {
@@ -42,6 +48,12 @@ const CATEGORY_BODY = [
               tpnb: "22",
               title: "Tesco Bananas Loose",
               brandName: "TESCO",
+              productType: "CatchWeightProducts",
+              averageWeight: 1.65,
+              minWeight: 1,
+              maxWeight: 2.3,
+              increment: 325,
+              bulkBuyLimit: 16,
               sellers: {
                 results: [
                   {
@@ -76,6 +88,9 @@ describe("favourites", () => {
     expect(op.operationName).toBe("GetFavourites");
     expect(op.extensions.mfeName).toBe("mfe-favourites");
     expect(op.variables).toMatchObject({ count: 50, page: 1, sortBy: "TAXONOMY" });
+    expect(op.query).toContain(
+      "productType averageWeight minWeight maxWeight increment bulkBuyLimit",
+    );
 
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({
@@ -84,6 +99,14 @@ describe("favourites", () => {
       title: "Tesco Semi Skimmed Milk",
       brand: "TESCO",
       onOffer: false,
+    });
+    expect(results[0]!.quantityRules).toEqual({
+      productType: "SingleProduct",
+      averageWeight: 0,
+      minWeight: 0,
+      maxWeight: 0,
+      increment: 0,
+      bulkBuyLimit: 25,
     });
     expect(results[0]!.price).toMatchObject({
       actual: 1.45,
@@ -103,6 +126,9 @@ describe("browseCategory", () => {
     expect(op.operationName).toBe("GetCategoryProducts");
     expect(op.extensions.mfeName).toBe("mfe-plp");
     expect(op.variables).toMatchObject({ facet: "b;RnJlc2ggRm9vZA==", count: 24, page: 1 });
+    expect(op.query).toContain(
+      "productType averageWeight minWeight maxWeight increment bulkBuyLimit",
+    );
 
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({
@@ -110,6 +136,14 @@ describe("browseCategory", () => {
       tpnb: "22",
       title: "Tesco Bananas Loose",
       onOffer: true,
+    });
+    expect(results[0]!.quantityRules).toEqual({
+      productType: "CatchWeightProducts",
+      averageWeight: 1.65,
+      minWeight: 1,
+      maxWeight: 2.3,
+      increment: 325,
+      bulkBuyLimit: 16,
     });
     expect(results[0]!.promotions[0]).toMatchObject({
       priceAfterDiscount: 0.15,

@@ -15,6 +15,7 @@ import type {
   PackSize,
   Price,
   Product,
+  ProductQuantityRules,
   Promotion,
   SearchResult,
   Slot,
@@ -64,6 +65,17 @@ function parsePackSize(v: unknown): PackSize | null {
   return units && Number.isFinite(value) ? { value, units } : null;
 }
 
+function parseQuantityRules(v: Raw): ProductQuantityRules {
+  return {
+    productType: str(v.productType),
+    averageWeight: num(v.averageWeight),
+    minWeight: num(v.minWeight),
+    maxWeight: num(v.maxWeight),
+    increment: num(v.increment),
+    bulkBuyLimit: num(v.bulkBuyLimit),
+  };
+}
+
 export function parseProduct(v: unknown): Product {
   const node = obj(v);
   const details = obj(node.details);
@@ -75,6 +87,7 @@ export function parseProduct(v: unknown): Product {
     brand: str(node.brandName),
     price: parsePrice(node.price),
     packSize: parsePackSize(details.packSize),
+    quantityRules: parseQuantityRules(node),
     promotions: parsePromotions(node.promotions),
     nutrition,
     macros: nutrition?.macros ?? null,
@@ -98,6 +111,7 @@ export function parseProductNode(v: unknown): SearchResult | null {
     title: str(node.title) ?? "",
     brand: str(node.brandName),
     price: parsePrice(seller.price),
+    quantityRules: parseQuantityRules(node),
     onOffer: promotions.length > 0,
     promotions,
   };

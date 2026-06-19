@@ -21,6 +21,10 @@ The full surface. For the pitch, quick start, and how it works, see the [README]
 | Reorder | `orders.lastFulfilled()` → `Order \| null` | authed | Last delivered shop. |
 | Checkout | `checkout()` → `{ basket, url }` | authed | **Stops at the payment URL. Never pays.** |
 
+## Catalogue Models
+
+`Product` and `SearchResult` include `quantityRules`, Tesco's product type, weight, increment, and bulk-buy metadata. Ordinary fixed products commonly return zero weights/increments; catch-weight products can return non-zero `averageWeight`, `minWeight`, `maxWeight`, and `increment`. Missing or malformed values are exposed as `null`.
+
 ## Nutrition
 
 ### Types
