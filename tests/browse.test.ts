@@ -120,13 +120,14 @@ describe("favourites", () => {
       maxWeight: 0,
       increment: 0,
       bulkBuyLimit: 25,
+      catchWeightOptions: [],
     });
     expect(results[0]!.price).toMatchObject({
       actual: 1.45,
       unitPrice: 0.64,
       unitOfMeasure: "litre",
     });
-    expect(results[0]!.catchWeightList).toBeUndefined();
+    expect(results[0]!.quantityRules.catchWeightOptions).toEqual([]);
   });
 });
 
@@ -162,12 +163,16 @@ describe("browseCategory", () => {
       maxWeight: 2.3,
       increment: 325,
       bulkBuyLimit: 16,
+      catchWeightOptions: [
+        { price: 4.25, weight: 0.25, default: true },
+        { price: 5.1, weight: 0.3, default: false },
+      ],
     });
     expect(results[0]!.promotions[0]).toMatchObject({
       priceAfterDiscount: 0.15,
       priceBeforeDiscount: 0.17,
     });
-    expect(results[0]!.catchWeightList).toEqual([
+    expect(results[0]!.quantityRules.catchWeightOptions).toEqual([
       { price: 4.25, weight: 0.25, default: true },
       { price: 5.1, weight: 0.3, default: false },
     ]);

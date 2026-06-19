@@ -208,18 +208,19 @@ describe("parsing", () => {
       maxWeight: 0,
       increment: 0,
       bulkBuyLimit: 25,
+      catchWeightOptions: [],
     });
     expect(r!.onOffer).toBe(true);
     expect(r!.promotions[0]!.priceBeforeDiscount).toBeNull();
     expect(r!.promotions[0]!.priceAfterDiscount).toBe(1.65);
-    expect(r!.catchWeightList).toBeUndefined();
+    expect(r!.quantityRules.catchWeightOptions).toEqual([]);
   });
 
   it("parses catch-weight options on search results", async () => {
     const { impl } = stubFetch([{ body: SEARCH_CATCH_WEIGHT_BODY }]);
     const t = new Basketeer({ throttleMs: 0, fetchImpl: impl });
     const { results } = await t.search("steak");
-    expect(results[0]!.catchWeightList).toEqual([
+    expect(results[0]!.quantityRules.catchWeightOptions).toEqual([
       { price: 4.25, weight: 0.25, default: true },
       { price: 5.1, weight: 0.3, default: false },
     ]);
@@ -230,7 +231,7 @@ describe("parsing", () => {
     const t = new Basketeer({ throttleMs: 0, fetchImpl: impl });
     const p = await t.getProduct("282822189");
     expect(p.packSize).toEqual({ value: 1750, units: "ML" });
-    expect(p.catchWeightList).toBeUndefined();
+    expect(p.quantityRules.catchWeightOptions).toEqual([]);
     expect(p.imageUrl).toBe(
       "https://digitalcontent.api.tesco.com/v2/media/ghs/coke.jpeg?h=225&w=225",
     );
@@ -241,6 +242,7 @@ describe("parsing", () => {
       maxWeight: 0,
       increment: 0,
       bulkBuyLimit: 99,
+      catchWeightOptions: [],
     });
   });
 
@@ -251,7 +253,7 @@ describe("parsing", () => {
     expect(p.imageUrl).toBeNull();
     expect(p.packSize).toBeNull();
     expect(p.price.actual).toBe(0.17);
-    expect(p.catchWeightList).toEqual([
+    expect(p.quantityRules.catchWeightOptions).toEqual([
       { price: 4.25, weight: 0.25, default: true },
       { price: 6.8, weight: 0.4, default: true },
     ]);
@@ -262,6 +264,10 @@ describe("parsing", () => {
       maxWeight: 2.3,
       increment: 325,
       bulkBuyLimit: 25,
+      catchWeightOptions: [
+        { price: 4.25, weight: 0.25, default: true },
+        { price: 6.8, weight: 0.4, default: true },
+      ],
     });
   });
 });

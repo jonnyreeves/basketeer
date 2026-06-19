@@ -66,8 +66,8 @@ function parsePackSize(v: unknown): PackSize | null {
   return units && Number.isFinite(value) ? { value, units } : null;
 }
 
-function parseCatchWeightList(v: unknown): CatchWeightOption[] | undefined {
-  const options = objs(v)
+function parseCatchWeightOptions(v: unknown): CatchWeightOption[] {
+  return objs(v)
     .map((entry) => {
       const price = num(entry.price);
       const weight = num(entry.weight);
@@ -75,7 +75,6 @@ function parseCatchWeightList(v: unknown): CatchWeightOption[] | undefined {
       return { price, weight, default: Boolean(entry.default) };
     })
     .filter((entry): entry is CatchWeightOption => entry !== null);
-  return options.length > 0 ? options : undefined;
 }
 
 function parseQuantityRules(v: Raw): ProductQuantityRules {
@@ -86,6 +85,7 @@ function parseQuantityRules(v: Raw): ProductQuantityRules {
     maxWeight: num(v.maxWeight),
     increment: num(v.increment),
     bulkBuyLimit: num(v.bulkBuyLimit),
+    catchWeightOptions: parseCatchWeightOptions(v.catchWeightList),
   };
 }
 
@@ -93,7 +93,6 @@ export function parseProduct(v: unknown): Product {
   const node = obj(v);
   const details = obj(node.details);
   const nutrition = parseNutrition(arr(details.nutrition));
-  const catchWeightList = parseCatchWeightList(node.catchWeightList);
   return {
     sku: id(node.tpnc) ?? "",
     tpnb: id(node.tpnb),
@@ -102,7 +101,6 @@ export function parseProduct(v: unknown): Product {
     imageUrl: str(node.defaultImageUrl),
     price: parsePrice(node.price),
     packSize: parsePackSize(details.packSize),
-    ...(catchWeightList ? { catchWeightList } : {}),
     quantityRules: parseQuantityRules(node),
     promotions: parsePromotions(node.promotions),
     nutrition,
@@ -121,7 +119,6 @@ export function parseProductNode(v: unknown): SearchResult | null {
   if (node.tpnc == null) return null;
   const seller = obj(arr(obj(node.sellers).results)[0]);
   const promotions = parsePromotions(seller.promotions);
-  const catchWeightList = parseCatchWeightList(node.catchWeightList);
   return {
     sku: String(node.tpnc),
     tpnb: id(node.tpnb),
@@ -129,7 +126,6 @@ export function parseProductNode(v: unknown): SearchResult | null {
     brand: str(node.brandName),
     imageUrl: str(node.defaultImageUrl),
     price: parsePrice(seller.price),
-    ...(catchWeightList ? { catchWeightList } : {}),
     quantityRules: parseQuantityRules(node),
     onOffer: promotions.length > 0,
     promotions,

@@ -33,6 +33,10 @@ describe("parsers are defensive", () => {
       maxWeight: Number.POSITIVE_INFINITY,
       increment: 0,
       bulkBuyLimit: 25,
+      catchWeightList: [
+        { price: 4.25, weight: 0.25, default: true },
+        { price: "bad", weight: 0.3, default: true },
+      ],
       price: null,
       promotions: [],
       details: { packSize: null, nutrition: [] },
@@ -45,6 +49,7 @@ describe("parsers are defensive", () => {
       maxWeight: null,
       increment: 0,
       bulkBuyLimit: 25,
+      catchWeightOptions: [{ price: 4.25, weight: 0.25, default: true }],
     });
   });
 

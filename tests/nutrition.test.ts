@@ -118,6 +118,7 @@ function product(
       maxWeight: null,
       increment: null,
       bulkBuyLimit: null,
+      catchWeightOptions: [],
     },
     nutrition,
     macros: nutrition?.macros ?? null,
