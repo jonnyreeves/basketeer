@@ -23,6 +23,12 @@ const SEARCH_BODY = [
               brandName: "TESCO",
               defaultImageUrl:
                 "https://digitalcontent.api.tesco.com/v2/media/ghs/milk.jpeg?h=225&w=225",
+              productType: "SingleProduct",
+              averageWeight: 0,
+              minWeight: 0,
+              maxWeight: 0,
+              increment: 0,
+              bulkBuyLimit: 25,
               sellers: {
                 results: [
                   {
@@ -88,6 +94,12 @@ const PRODUCT_PACKAGED = [
         title: "Coca-Cola 1.75L",
         brandName: "Coca-Cola",
         defaultImageUrl: "https://digitalcontent.api.tesco.com/v2/media/ghs/coke.jpeg?h=225&w=225",
+        productType: "SingleProduct",
+        averageWeight: 0,
+        minWeight: 0,
+        maxWeight: 0,
+        increment: 0,
+        bulkBuyLimit: 99,
         price: { actual: 2.49, unitPrice: 1.42, unitOfMeasure: "litre" },
         promotions: [],
         details: { packSize: [{ value: "1750", units: "ML" }], nutrition: [], ingredients: [] },
@@ -105,6 +117,12 @@ const PRODUCT_LOOSE = [
         title: "Tesco Bananas Loose",
         brandName: "TESCO",
         defaultImageUrl: null,
+        productType: "CatchWeightProducts",
+        averageWeight: 1.65,
+        minWeight: 1,
+        maxWeight: 2.3,
+        increment: 325,
+        bulkBuyLimit: 25,
         price: { actual: 0.17, unitPrice: 1.1, unitOfMeasure: "kg" },
         catchWeightList: [
           { price: 4.25, weight: 0.25, default: true },
@@ -136,15 +154,20 @@ describe("request assembly", () => {
     expect(body[0].extensions.mfeName).toBe("mfe-plp");
   });
 
-  it("selects catchWeightList on product and catalogue reads", async () => {
+  it("selects image, catch-weight, and quantity rule fields on product and search reads", async () => {
+    const quantityFields = "productType averageWeight minWeight maxWeight increment bulkBuyLimit";
     const { impl: productImpl, calls: productCalls } = stubFetch([{ body: PRODUCT_PACKAGED }]);
     await new Basketeer({ throttleMs: 0, fetchImpl: productImpl }).getProduct("282822189");
+    expect(productCalls[0]!.body[0].query).toContain("defaultImageUrl");
     expect(productCalls[0]!.body[0].query).toContain("catchWeightList { price weight default }");
+    expect(productCalls[0]!.body[0].query).toContain(quantityFields);
 
     const { impl: searchImpl, calls: searchCalls } = stubFetch([{ body: SEARCH_BODY }]);
     await new Basketeer({ throttleMs: 0, fetchImpl: searchImpl }).search("milk");
     expect(searchCalls[0]!.body[0].query).toContain("... on ProductInterface");
+    expect(searchCalls[0]!.body[0].query).toContain("defaultImageUrl");
     expect(searchCalls[0]!.body[0].query).toContain("catchWeightList { price weight default }");
+    expect(searchCalls[0]!.body[0].query).toContain(quantityFields);
   });
 
   it("omits auth headers when anonymous", async () => {
@@ -178,6 +201,14 @@ describe("parsing", () => {
       "https://digitalcontent.api.tesco.com/v2/media/ghs/milk.jpeg?h=225&w=225",
     );
     expect(r!.price.actual).toBe(1.65);
+    expect(r!.quantityRules).toEqual({
+      productType: "SingleProduct",
+      averageWeight: 0,
+      minWeight: 0,
+      maxWeight: 0,
+      increment: 0,
+      bulkBuyLimit: 25,
+    });
     expect(r!.onOffer).toBe(true);
     expect(r!.promotions[0]!.priceBeforeDiscount).toBeNull();
     expect(r!.promotions[0]!.priceAfterDiscount).toBe(1.65);
@@ -203,6 +234,14 @@ describe("parsing", () => {
     expect(p.imageUrl).toBe(
       "https://digitalcontent.api.tesco.com/v2/media/ghs/coke.jpeg?h=225&w=225",
     );
+    expect(p.quantityRules).toEqual({
+      productType: "SingleProduct",
+      averageWeight: 0,
+      minWeight: 0,
+      maxWeight: 0,
+      increment: 0,
+      bulkBuyLimit: 99,
+    });
   });
 
   it("handles null packSize and parses valid catch-weight entries only", async () => {
@@ -216,6 +255,14 @@ describe("parsing", () => {
       { price: 4.25, weight: 0.25, default: true },
       { price: 6.8, weight: 0.4, default: true },
     ]);
+    expect(p.quantityRules).toEqual({
+      productType: "CatchWeightProducts",
+      averageWeight: 1.65,
+      minWeight: 1,
+      maxWeight: 2.3,
+      increment: 325,
+      bulkBuyLimit: 25,
+    });
   });
 });
 

@@ -25,6 +25,8 @@ The full surface. For the pitch, quick start, and how it works, see the [README]
 
 `Product` and `SearchResult` include `catchWeightList?: CatchWeightOption[]` when Tesco exposes catch-weight options for a product. Each option is `{ price: number; weight: number; default: boolean }`; the field is omitted for ordinary fixed-weight products or malformed Tesco data.
 
+`Product` and `SearchResult` also include `quantityRules`, Tesco's product type, weight, increment, and bulk-buy metadata. Ordinary fixed products commonly return zero weights/increments; catch-weight products can return non-zero `averageWeight`, `minWeight`, `maxWeight`, and `increment`. Missing or malformed values are exposed as `null`.
+
 ## Product images
 
 `Product` and `SearchResult` include `imageUrl: string | null`, populated from Tesco's `defaultImageUrl` when it is present. Search-like APIs (`search`, `browseCategory`, and `favourites`) return this field without requiring a separate product lookup.

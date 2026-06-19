@@ -38,6 +38,7 @@ export type {
   PackSize,
   Price,
   Product,
+  ProductQuantityRules,
   Promotion,
   Range,
   SearchPage,

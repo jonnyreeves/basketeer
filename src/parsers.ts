@@ -16,6 +16,7 @@ import type {
   PackSize,
   Price,
   Product,
+  ProductQuantityRules,
   Promotion,
   SearchResult,
   Slot,
@@ -77,6 +78,17 @@ function parseCatchWeightList(v: unknown): CatchWeightOption[] | undefined {
   return options.length > 0 ? options : undefined;
 }
 
+function parseQuantityRules(v: Raw): ProductQuantityRules {
+  return {
+    productType: str(v.productType),
+    averageWeight: num(v.averageWeight),
+    minWeight: num(v.minWeight),
+    maxWeight: num(v.maxWeight),
+    increment: num(v.increment),
+    bulkBuyLimit: num(v.bulkBuyLimit),
+  };
+}
+
 export function parseProduct(v: unknown): Product {
   const node = obj(v);
   const details = obj(node.details);
@@ -91,6 +103,7 @@ export function parseProduct(v: unknown): Product {
     price: parsePrice(node.price),
     packSize: parsePackSize(details.packSize),
     ...(catchWeightList ? { catchWeightList } : {}),
+    quantityRules: parseQuantityRules(node),
     promotions: parsePromotions(node.promotions),
     nutrition,
     macros: nutrition?.macros ?? null,
@@ -117,6 +130,7 @@ export function parseProductNode(v: unknown): SearchResult | null {
     imageUrl: str(node.defaultImageUrl),
     price: parsePrice(seller.price),
     ...(catchWeightList ? { catchWeightList } : {}),
+    quantityRules: parseQuantityRules(node),
     onOffer: promotions.length > 0,
     promotions,
   };

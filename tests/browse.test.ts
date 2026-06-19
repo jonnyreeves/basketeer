@@ -17,6 +17,12 @@ const FAVOURITES_BODY = [
             catchWeightList: null,
             defaultImageUrl:
               "https://digitalcontent.api.tesco.com/v2/media/ghs/milk.jpeg?h=225&w=225",
+            productType: "SingleProduct",
+            averageWeight: 0,
+            minWeight: 0,
+            maxWeight: 0,
+            increment: 0,
+            bulkBuyLimit: 25,
             sellers: {
               results: [
                 {
@@ -51,6 +57,12 @@ const CATEGORY_BODY = [
                 { price: 4.25, weight: 0.25, default: true },
                 { price: 5.1, weight: 0.3, default: false },
               ],
+              productType: "CatchWeightProducts",
+              averageWeight: 1.65,
+              minWeight: 1,
+              maxWeight: 2.3,
+              increment: 325,
+              bulkBuyLimit: 16,
               sellers: {
                 results: [
                   {
@@ -88,6 +100,9 @@ describe("favourites", () => {
     expect(op.query).toContain("... on ProductInterface");
     expect(op.query).toContain("defaultImageUrl");
     expect(op.query).toContain("catchWeightList { price weight default }");
+    expect(op.query).toContain(
+      "productType averageWeight minWeight maxWeight increment bulkBuyLimit",
+    );
 
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({
@@ -97,6 +112,14 @@ describe("favourites", () => {
       brand: "TESCO",
       imageUrl: "https://digitalcontent.api.tesco.com/v2/media/ghs/milk.jpeg?h=225&w=225",
       onOffer: false,
+    });
+    expect(results[0]!.quantityRules).toEqual({
+      productType: "SingleProduct",
+      averageWeight: 0,
+      minWeight: 0,
+      maxWeight: 0,
+      increment: 0,
+      bulkBuyLimit: 25,
     });
     expect(results[0]!.price).toMatchObject({
       actual: 1.45,
@@ -120,6 +143,9 @@ describe("browseCategory", () => {
     expect(op.query).toContain("... on ProductInterface");
     expect(op.query).toContain("defaultImageUrl");
     expect(op.query).toContain("catchWeightList { price weight default }");
+    expect(op.query).toContain(
+      "productType averageWeight minWeight maxWeight increment bulkBuyLimit",
+    );
 
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({
@@ -128,6 +154,14 @@ describe("browseCategory", () => {
       title: "Tesco Bananas Loose",
       imageUrl: "https://digitalcontent.api.tesco.com/v2/media/ghs/bananas.jpeg?h=225&w=225",
       onOffer: true,
+    });
+    expect(results[0]!.quantityRules).toEqual({
+      productType: "CatchWeightProducts",
+      averageWeight: 1.65,
+      minWeight: 1,
+      maxWeight: 2.3,
+      increment: 325,
+      bulkBuyLimit: 16,
     });
     expect(results[0]!.promotions[0]).toMatchObject({
       priceAfterDiscount: 0.15,
