@@ -25,6 +25,20 @@ The full surface. For the pitch, quick start, and how it works, see the [README]
 
 `Product` and `SearchResult` include `catchWeightList?: CatchWeightOption[]` when Tesco exposes catch-weight options for a product. Each option is `{ price: number; weight: number; default: boolean }`; the field is omitted for ordinary fixed-weight products or malformed Tesco data.
 
+## Product images
+
+`Product` and `SearchResult` include `imageUrl: string | null`, populated from Tesco's `defaultImageUrl` when it is present. Search-like APIs (`search`, `browseCategory`, and `favourites`) return this field without requiring a separate product lookup.
+
+```ts
+import { Basketeer, resizeImageUrl } from "basketeer";
+
+const client = new Basketeer();
+const { results } = await client.search("red peppers", { limit: 1 });
+const thumbnail = resizeImageUrl(results[0]?.imageUrl ?? null, { width: 135, height: 135 });
+```
+
+Tesco image URLs usually include `h` and `w` query parameters. `resizeImageUrl(url, { width, height })` returns a copy with those dimensions set, preserves unrelated query parameters, returns `null` for a null input, and throws `RangeError` for non-positive or non-integer dimensions.
+
 ## Nutrition
 
 ### Types
@@ -59,6 +73,7 @@ Runs a keyword search, fetches nutrition for the top `hydrate` results (one thro
 | --- | --- | --- |
 | `parseNutrition` | `(rows: unknown[]) => Nutrition \| null` | Normalizes raw Tesco nutrition rows. Returns `null` for empty or unparseable input. |
 | `filterByNutrition` | `(products: Product[], opts: { where?, sort?, basis? }) => Product[]` | Pure filter + sort. Drops products with no nutrition when `where` or `sort` is given. |
+| `resizeImageUrl` | `(imageUrl: string \| null, size: { width: number; height: number }) => string \| null` | Sets Tesco image `w`/`h` query params for thumbnails or larger packshots. |
 
 ### CLI
 

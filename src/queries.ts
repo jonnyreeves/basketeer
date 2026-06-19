@@ -6,7 +6,7 @@
 export const GET_PRODUCT = `
 query GetProduct($tpnc: String!) {
   product(tpnc: $tpnc) {
-    tpnb tpnc title brandName
+    tpnb tpnc title brandName defaultImageUrl
     catchWeightList { price weight default }
     price { actual unitPrice unitOfMeasure }
     promotions {
@@ -31,7 +31,7 @@ query Search($query: String!, $page: Int = 1, $count: Int) {
       node {
         __typename
         ... on ProductInterface {
-          tpnc tpnb title brandName
+          tpnc tpnb title brandName defaultImageUrl
           catchWeightList { price weight default }
           sellers {
             results {
@@ -58,7 +58,7 @@ query GetCategoryProducts($facet: ID, $page: Int = 1, $count: Int) {
       node {
         __typename
         ... on ProductInterface {
-          tpnc tpnb title brandName
+          tpnc tpnb title brandName defaultImageUrl
           catchWeightList { price weight default }
           sellers {
             results {
@@ -78,7 +78,7 @@ query GetFavourites($page: Int = 1, $count: Int, $sortBy: String) {
     products {
       __typename
       ... on ProductInterface {
-        tpnc tpnb title brandName
+        tpnc tpnb title brandName defaultImageUrl
         catchWeightList { price weight default }
         sellers {
           results {

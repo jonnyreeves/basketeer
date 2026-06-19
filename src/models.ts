@@ -32,6 +32,7 @@ export interface Product {
   tpnb: string | null;
   title: string;
   brand: string | null;
+  imageUrl: string | null;
   price: Price;
   packSize: PackSize | null;
   catchWeightList?: CatchWeightOption[];
@@ -48,6 +49,7 @@ export interface SearchResult {
   tpnb: string | null;
   title: string;
   brand: string | null;
+  imageUrl: string | null;
   price: Price;
   catchWeightList?: CatchWeightOption[];
   onOffer: boolean;

@@ -15,6 +15,8 @@ const FAVOURITES_BODY = [
             title: "Tesco Semi Skimmed Milk",
             brandName: "TESCO",
             catchWeightList: null,
+            defaultImageUrl:
+              "https://digitalcontent.api.tesco.com/v2/media/ghs/milk.jpeg?h=225&w=225",
             sellers: {
               results: [
                 {
@@ -43,6 +45,8 @@ const CATEGORY_BODY = [
               tpnb: "22",
               title: "Tesco Bananas Loose",
               brandName: "TESCO",
+              defaultImageUrl:
+                "https://digitalcontent.api.tesco.com/v2/media/ghs/bananas.jpeg?h=225&w=225",
               catchWeightList: [
                 { price: 4.25, weight: 0.25, default: true },
                 { price: 5.1, weight: 0.3, default: false },
@@ -82,6 +86,7 @@ describe("favourites", () => {
     expect(op.extensions.mfeName).toBe("mfe-favourites");
     expect(op.variables).toMatchObject({ count: 50, page: 1, sortBy: "TAXONOMY" });
     expect(op.query).toContain("... on ProductInterface");
+    expect(op.query).toContain("defaultImageUrl");
     expect(op.query).toContain("catchWeightList { price weight default }");
 
     expect(results).toHaveLength(1);
@@ -90,6 +95,7 @@ describe("favourites", () => {
       tpnb: "11",
       title: "Tesco Semi Skimmed Milk",
       brand: "TESCO",
+      imageUrl: "https://digitalcontent.api.tesco.com/v2/media/ghs/milk.jpeg?h=225&w=225",
       onOffer: false,
     });
     expect(results[0]!.price).toMatchObject({
@@ -112,6 +118,7 @@ describe("browseCategory", () => {
     expect(op.extensions.mfeName).toBe("mfe-plp");
     expect(op.variables).toMatchObject({ facet: "b;RnJlc2ggRm9vZA==", count: 24, page: 1 });
     expect(op.query).toContain("... on ProductInterface");
+    expect(op.query).toContain("defaultImageUrl");
     expect(op.query).toContain("catchWeightList { price weight default }");
 
     expect(results).toHaveLength(1);
@@ -119,6 +126,7 @@ describe("browseCategory", () => {
       sku: "222",
       tpnb: "22",
       title: "Tesco Bananas Loose",
+      imageUrl: "https://digitalcontent.api.tesco.com/v2/media/ghs/bananas.jpeg?h=225&w=225",
       onOffer: true,
     });
     expect(results[0]!.promotions[0]).toMatchObject({
