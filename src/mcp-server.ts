@@ -66,7 +66,7 @@ export function buildServer(client: Basketeer): McpServer {
 
   server.tool(
     "basketeer_search",
-    "Search the Tesco grocery catalogue. Returns matching products with SKU, title, price, and any offers.",
+    "Search the Tesco grocery catalogue. Returns matching products with SKU, title, price, offers, and quantityRules (weight/bulk buy limits).",
     {
       query: z.string().describe("Search terms, e.g. 'semi skimmed milk'."),
       limit: z.number().int().positive().optional(),
@@ -77,7 +77,7 @@ export function buildServer(client: Basketeer): McpServer {
 
   server.tool(
     "basketeer_product",
-    "Fetch one product by SKU (tpnc), including price, pack size, promotions, and nutrition.",
+    "Fetch one product by SKU (tpnc), including price, pack size, promotions, quantityRules (weight/bulk buy/catch weight options), and nutrition.",
     { sku: z.string().describe("The product SKU (tpnc), e.g. from a search result.") },
     { readOnlyHint: true },
     ({ sku }) => run(() => client.getProduct(sku)),
@@ -85,7 +85,7 @@ export function buildServer(client: Basketeer): McpServer {
 
   server.tool(
     "basketeer_favourites",
-    "List the signed-in customer's favourites ('my usuals'). Requires a saved session.",
+    "List the signed-in customer's favourites ('my usuals') including price, offers, and quantityRules. Requires a saved session.",
     { limit: z.number().int().positive().optional() },
     { readOnlyHint: true },
     ({ limit }) => run(() => client.favourites({ limit })),

@@ -23,6 +23,12 @@ const SEARCH_BODY = [
               brandName: "TESCO",
               defaultImageUrl:
                 "https://digitalcontent.api.tesco.com/v2/media/ghs/milk.jpeg?h=225&w=225",
+              productType: "SingleProduct",
+              averageWeight: 0,
+              minWeight: 0,
+              maxWeight: 0,
+              increment: 0,
+              bulkBuyLimit: 25,
               sellers: {
                 results: [
                   {
@@ -47,6 +53,38 @@ const SEARCH_BODY = [
   },
 ];
 
+const SEARCH_CATCH_WEIGHT_BODY = [
+  {
+    data: {
+      search: {
+        results: [
+          {
+            node: {
+              __typename: "ProductType",
+              tpnc: "276054144",
+              tpnb: "54550994",
+              title: "Tesco Finest Beef Steak",
+              brandName: "TESCO FINEST",
+              catchWeightList: [
+                { price: 4.25, weight: 0.25, default: true },
+                { price: 5.1, weight: 0.3, default: false },
+              ],
+              sellers: {
+                results: [
+                  {
+                    price: { actual: 4.25, unitPrice: 17, unitOfMeasure: "kg" },
+                    promotions: [],
+                  },
+                ],
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
+];
+
 const PRODUCT_PACKAGED = [
   {
     data: {
@@ -56,6 +94,12 @@ const PRODUCT_PACKAGED = [
         title: "Coca-Cola 1.75L",
         brandName: "Coca-Cola",
         defaultImageUrl: "https://digitalcontent.api.tesco.com/v2/media/ghs/coke.jpeg?h=225&w=225",
+        productType: "SingleProduct",
+        averageWeight: null,
+        minWeight: null,
+        maxWeight: null,
+        increment: null,
+        bulkBuyLimit: 25,
         price: { actual: 2.49, unitPrice: 1.42, unitOfMeasure: "litre" },
         promotions: [],
         details: { packSize: [{ value: "1750", units: "ML" }], nutrition: [], ingredients: [] },
@@ -73,7 +117,14 @@ const PRODUCT_LOOSE = [
         title: "Tesco Bananas Loose",
         brandName: "TESCO",
         defaultImageUrl: null,
+        productType: "LooseProduce",
+        averageWeight: 0.18,
+        minWeight: null,
+        maxWeight: null,
+        increment: null,
+        bulkBuyLimit: 16,
         price: { actual: 0.17, unitPrice: 1.1, unitOfMeasure: "kg" },
+        catchWeightList: null,
         promotions: [],
         details: { packSize: null, nutrition: [], ingredients: [] },
       },
@@ -96,6 +147,20 @@ describe("request assembly", () => {
     expect(Array.isArray(body)).toBe(true);
     expect(body[0].operationName).toBe("Search");
     expect(body[0].extensions.mfeName).toBe("mfe-plp");
+  });
+
+  it("selects catch-weight and quantity rule fields on product and search reads", async () => {
+    const quantityFields = "productType averageWeight minWeight maxWeight increment bulkBuyLimit";
+    const { impl: productImpl, calls: productCalls } = stubFetch([{ body: PRODUCT_PACKAGED }]);
+    await new Basketeer({ throttleMs: 0, fetchImpl: productImpl }).getProduct("282822189");
+    expect(productCalls[0]!.body[0].query).toContain("catchWeightList { price weight default }");
+    expect(productCalls[0]!.body[0].query).toContain(quantityFields);
+
+    const { impl: searchImpl, calls: searchCalls } = stubFetch([{ body: SEARCH_BODY }]);
+    await new Basketeer({ throttleMs: 0, fetchImpl: searchImpl }).search("milk");
+    expect(searchCalls[0]!.body[0].query).toContain("... on ProductInterface");
+    expect(searchCalls[0]!.body[0].query).toContain("catchWeightList { price weight default }");
+    expect(searchCalls[0]!.body[0].query).toContain(quantityFields);
   });
 
   it("omits auth headers when anonymous", async () => {
@@ -129,9 +194,28 @@ describe("parsing", () => {
       "https://digitalcontent.api.tesco.com/v2/media/ghs/milk.jpeg?h=225&w=225",
     );
     expect(r!.price.actual).toBe(1.65);
+    expect(r!.quantityRules).toEqual({
+      productType: "SingleProduct",
+      averageWeight: 0,
+      minWeight: 0,
+      maxWeight: 0,
+      increment: 0,
+      bulkBuyLimit: 25,
+      catchWeightOptions: [],
+    });
     expect(r!.onOffer).toBe(true);
     expect(r!.promotions[0]!.priceBeforeDiscount).toBeNull();
     expect(r!.promotions[0]!.priceAfterDiscount).toBe(1.65);
+  });
+
+  it("parses catch-weight options on search results", async () => {
+    const { impl } = stubFetch([{ body: SEARCH_CATCH_WEIGHT_BODY }]);
+    const t = new Basketeer({ throttleMs: 0, fetchImpl: impl });
+    const { results } = await t.search("steak");
+    expect(results[0]!.quantityRules.catchWeightOptions).toEqual([
+      { price: 4.25, weight: 0.25, default: true },
+      { price: 5.1, weight: 0.3, default: false },
+    ]);
   });
 
   it("coerces packSize array (string value, uppercase units) to a number", async () => {
@@ -142,6 +226,15 @@ describe("parsing", () => {
     expect(p.imageUrl).toBe(
       "https://digitalcontent.api.tesco.com/v2/media/ghs/coke.jpeg?h=225&w=225",
     );
+    expect(p.quantityRules).toEqual({
+      productType: "SingleProduct",
+      averageWeight: null,
+      minWeight: null,
+      maxWeight: null,
+      increment: null,
+      bulkBuyLimit: 25,
+      catchWeightOptions: [],
+    });
   });
 
   it("handles null packSize (loose produce) without throwing", async () => {
@@ -151,6 +244,15 @@ describe("parsing", () => {
     expect(p.imageUrl).toBeNull();
     expect(p.packSize).toBeNull();
     expect(p.price.actual).toBe(0.17);
+    expect(p.quantityRules).toEqual({
+      productType: "LooseProduce",
+      averageWeight: 0.18,
+      minWeight: null,
+      maxWeight: null,
+      increment: null,
+      bulkBuyLimit: 16,
+      catchWeightOptions: [],
+    });
   });
 });
 

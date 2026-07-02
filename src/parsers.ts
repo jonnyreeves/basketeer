@@ -10,11 +10,13 @@ import type {
   Basket,
   BasketLine,
   BookedSlot,
+  CatchWeightOption,
   Order,
   OrderItem,
   PackSize,
   Price,
   Product,
+  ProductQuantityRules,
   Promotion,
   SearchResult,
   Slot,
@@ -64,6 +66,29 @@ function parsePackSize(v: unknown): PackSize | null {
   return units && Number.isFinite(value) ? { value, units } : null;
 }
 
+function parseCatchWeightOptions(v: unknown): CatchWeightOption[] {
+  return objs(v)
+    .map((entry) => {
+      const price = num(entry.price);
+      const weight = num(entry.weight);
+      if (price === null || weight === null) return null;
+      return { price, weight, default: Boolean(entry.default) };
+    })
+    .filter((entry): entry is CatchWeightOption => entry !== null);
+}
+
+function parseQuantityRules(v: Raw): ProductQuantityRules {
+  return {
+    productType: str(v.productType),
+    averageWeight: num(v.averageWeight),
+    minWeight: num(v.minWeight),
+    maxWeight: num(v.maxWeight),
+    increment: num(v.increment),
+    bulkBuyLimit: num(v.bulkBuyLimit),
+    catchWeightOptions: parseCatchWeightOptions(v.catchWeightList),
+  };
+}
+
 export function parseProduct(v: unknown): Product {
   const node = obj(v);
   const details = obj(node.details);
@@ -76,6 +101,7 @@ export function parseProduct(v: unknown): Product {
     imageUrl: str(node.defaultImageUrl),
     price: parsePrice(node.price),
     packSize: parsePackSize(details.packSize),
+    quantityRules: parseQuantityRules(node),
     promotions: parsePromotions(node.promotions),
     nutrition,
     macros: nutrition?.macros ?? null,
@@ -100,6 +126,7 @@ export function parseProductNode(v: unknown): SearchResult | null {
     brand: str(node.brandName),
     imageUrl: str(node.defaultImageUrl),
     price: parsePrice(seller.price),
+    quantityRules: parseQuantityRules(node),
     onOffer: promotions.length > 0,
     promotions,
   };

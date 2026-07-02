@@ -35,6 +35,10 @@ const thumbnail = resizeImageUrl(results[0]?.imageUrl ?? null, { width: 135, hei
 
 Tesco image URLs usually include `h` and `w` query parameters. `resizeImageUrl(url, { width, height })` returns a copy with those dimensions set, preserves unrelated query parameters, returns `null` for a null input, and throws `RangeError` for non-positive or non-integer dimensions.
 
+## Catalogue Models
+
+`Product` and `SearchResult` include `quantityRules`, Tesco's product type, weight, increment, bulk-buy, and catch-weight metadata. Ordinary fixed products commonly return zero weights/increments and an empty `catchWeightOptions` array; catch-weight products can return non-zero `averageWeight`, `minWeight`, `maxWeight`, `increment`, and selectable `{ price, weight, default }` options. Missing or malformed scalar values are exposed as `null`.
+
 ## Nutrition
 
 ### Types
