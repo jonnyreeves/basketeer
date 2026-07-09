@@ -20,6 +20,22 @@ export interface PackSize {
   units: string;
 }
 
+export interface CatchWeightOption {
+  price: number;
+  weight: number;
+  default: boolean;
+}
+
+export interface ProductQuantityRules {
+  productType: string | null;
+  averageWeight: number | null;
+  minWeight: number | null;
+  maxWeight: number | null;
+  increment: number | null;
+  bulkBuyLimit: number | null;
+  catchWeightOptions: CatchWeightOption[];
+}
+
 export interface Product {
   /** tpnc — the SKU used for product lookup and basket ops. */
   sku: string;
@@ -36,6 +52,7 @@ export interface Product {
    */
   available: boolean | null;
   packSize: PackSize | null;
+  quantityRules: ProductQuantityRules;
   promotions: Promotion[];
   /** Normalized nutrition, or null if Tesco returned none / it was unparseable. */
   nutrition: Nutrition | null;
@@ -51,6 +68,7 @@ export interface SearchResult {
   brand: string | null;
   imageUrl: string | null;
   price: Price;
+  quantityRules: ProductQuantityRules;
   /** See {@link Product.available} — context-dependent (anonymous = national). */
   available: boolean | null;
   onOffer: boolean;

@@ -3,7 +3,7 @@ import type { AuthBackend } from "../src/auth/types.js";
 import { Basketeer } from "../src/client.js";
 import { AuthExpiredError, GraphQLRequestError } from "../src/errors.js";
 import { categoryFacet } from "../src/operations.js";
-import { isoDate, parseProductNode, parsePromotions } from "../src/parsers.js";
+import { isoDate, parseProduct, parseProductNode, parsePromotions } from "../src/parsers.js";
 import { UPDATE_BASKET } from "../src/queries.js";
 import { SESSION, stubFetch } from "./helpers.js";
 
@@ -21,6 +21,41 @@ describe("parsers are defensive", () => {
     expect(parseProductNode({ __typename: "NotAProduct" })).toBeNull();
     expect(parseProductNode({ tpnc: "1", title: "T" })?.sku).toBe("1");
     expect(parseProductNode({ tpnc: "1", defaultImageUrl: 123 })?.imageUrl).toBeNull();
+  });
+
+  it("quantityRules preserve valid values and null malformed fields", () => {
+    const product = parseProduct({
+      tpnc: "1",
+      title: "Weighted Product",
+      productType: 123,
+      averageWeight: 1.25,
+      minWeight: "1",
+      maxWeight: Number.POSITIVE_INFINITY,
+      increment: 0,
+      bulkBuyLimit: 25,
+      catchWeightList: [
+        { price: 4.25, weight: 0.25, default: true },
+        { price: "bad", weight: 0.3, default: true },
+        { price: 5.1, weight: Number.NaN, default: true },
+        { price: 6.8, weight: 0.4, default: 1 },
+      ],
+      price: null,
+      promotions: [],
+      details: { packSize: null, nutrition: [] },
+    });
+
+    expect(product.quantityRules).toEqual({
+      productType: null,
+      averageWeight: 1.25,
+      minWeight: null,
+      maxWeight: null,
+      increment: 0,
+      bulkBuyLimit: 25,
+      catchWeightOptions: [
+        { price: 4.25, weight: 0.25, default: true },
+        { price: 6.8, weight: 0.4, default: true },
+      ],
+    });
   });
 
   it("search drops null edges and tpnc-less nodes instead of fabricating results", async () => {
